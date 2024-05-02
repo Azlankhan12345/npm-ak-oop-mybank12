@@ -1,130 +1,186 @@
-#!/usr/bin/env node
+
+#! /usr/bin/env node
 import inquirer from "inquirer";
-import { faker } from "@faker-js/faker";
 import chalk from "chalk";
 
-class Customer {
-    constructor(
-        public firstName: string,
-        public lastName: string,
-        public age: number,
-        public gender: string,
-        public mobNum: number,
-        public accNum: number
-    ) {}
+class customer {
+  FirstName: string;
+  LastName: string;
+  age: number;
+  gender: string;
+  AccountNumber: string;
+  Balance: number;
+  constructor(
+    a: string,
+    b: string,
+    c: number,
+    d: string,
+    e: string,
+    f: number
+  ) {
+    this.FirstName = a;
+    this.LastName = b;
+    this.age = c;
+    this.gender = d;
+    this.AccountNumber = e;
+    this.Balance = f;
+  }
 }
+console.log(chalk.bold.bgBlueBright("PayPal"));
+class myBank {
+  customers: customer[] = [];
+  async createAcc() {
+    const { firstName, lastName, age, gender, accountNumber, balance } =
+      await inquirer.prompt([
+        {
+          type: "input",
+          name: "firstName",
+          message: chalk.bold.blueBright("Enter your first name:"),
+        },
+        {
+          type: "input",
+          name: "lastName",
+          message: chalk.bold.blueBright("Enter your last name:"),
+        },
+        {
+          type: "input",
+          name: "age",
+          message: chalk.bold.blueBright("Enter your age:"),
+        },
+        {
+          type: "input",
+          name: "gender",
+          message: chalk.bold.blueBright("Enter your gender:"),
+        },
+        {
+          type: "input",
+          name: "accountNumber",
+          message: chalk.bold.blueBright("Enter your new account number:"),
+        },
+        {
+          type: "input",
+          name: "balance",
+          message: chalk.bold.blueBright("Add initial balance:"),
+        },
+      ]);
+    const cus = new customer(
+      firstName,
+      lastName,
+      age,
+      gender,
+      accountNumber,
+      parseFloat(balance)
+    );
+    this.customers.push(cus);
 
-interface BankAccount {
-    accNum: number;
-    balance: number;
+    console.log(
+      chalk.bold.italic.yellowBright(
+        `congratulations, Mr/s ${cus.FirstName} ${cus.LastName} your account has been created successfully.`
+      )
+    );
+  }
+  async details() {
+    const { accountNumber } = await inquirer.prompt({
+      type: "input",
+      name: "accountNumber",
+      message: chalk.bold.cyan("Enter your account number:"),
+    });
+    const cus = this.customers.find((z) => z.AccountNumber === accountNumber);
+    if (cus) {
+      console.log(
+        chalk.bold.greenBright.underline(`Account Details:
+        Name: ${cus.FirstName} ${cus.LastName}
+        Age: ${cus.age}
+        Gender: ${cus.gender}
+        Account Number: ${cus.AccountNumber}
+        Balance: ${cus.Balance}`)
+      );
+    } else {
+      console.log(chalk.bold.red(`Account not found!`));
+    }
+  }
+  async debit() {
+    const { accountNumber, amount } = await inquirer.prompt([
+      {
+        type: "input",
+        name: "accountNumber",
+        message: chalk.bold.cyan("Enter your account number:"),
+      },
+      {
+        type: "input",
+        name: "amount",
+        message: chalk.bold.cyan("Enter amount to debit:"),
+      },
+    ]);
+    const cus = this.customers.find((z) => z.AccountNumber === accountNumber);
+    if (cus) {
+      if (cus.Balance >= parseFloat(amount)) {
+        cus.Balance -= parseFloat(amount);
+        console.log(
+          chalk.bold.italic.greenBright(
+            `Debited ${amount} from account ${accountNumber}. New balance: ${cus.Balance}`
+          )
+        );
+      } else {
+        console.log(chalk.bold.red("Insufficient balance"));
+      }
+    } else {
+      console.log(chalk.red.bold("Account not found:"));
+    }
+  }
+  async credit() {
+    const { accountNumber, amount } = await inquirer.prompt([
+      {
+        type: "input",
+        name: "accountNumber",
+        message: chalk.bold.cyan("Enter your account number:"),
+      },
+      {
+        type: "input",
+        name: "amount",
+        message: chalk.bold.cyan("Enter amount to credit:"),
+      },
+    ]);
+    const cus = this.customers.find((z) => z.AccountNumber === accountNumber);
+    if (cus) {
+      cus.Balance += parseFloat(amount);
+      console.log(
+        chalk.bold.italic.greenBright(
+          `Credited ${amount} to account ${accountNumber}. New balance: ${cus.Balance}`
+        )
+      );
+    } else {
+      console.log(chalk.red("Account not found"));
+    }
+  }
+  async start() {
+    while (true) {
+      const { choice } = await inquirer.prompt({
+        type: "list",
+        name: "choice",
+        message: "Select an option:",
+        choices: [
+          "Create Account",
+          "View Account Details",
+          "Debit",
+          "Credit",
+          "Exit",
+        ],
+      });
+      if (choice === "Create Account") {
+        await this.createAcc();
+      } else if (choice === "View Account Details") {
+        await this.details();
+      } else if (choice === "Debit") {
+        await this.debit();
+      } else if (choice === "Credit") {
+        await this.credit();
+      } else if (choice === "Exit") {
+        console.log(chalk.underline.red.italic("Yor are exit"));
+        process.exit();
+      }
+    }
+  }
 }
-
-class Bank {
-    customers: Customer[] = [];
-    accounts: BankAccount[] = [];
-
-    addCustomer(customer: Customer) {
-        this.customers.push(customer);
-        this.addAccountNo({ accNum: customer.accNum, balance: 1000000 });
-    }
-
-    addAccountNo(account: BankAccount) {
-        this.accounts.push(account);
-    }
-
-    findAccount(accNum: number): BankAccount | undefined {
-        return this.accounts.find(acc => acc.accNum === accNum);
-    }
-
-    displayBalance(accNum: number) {
-        const account = this.findAccount(accNum);
-        if (account) {
-            const customer = this.customers.find(c => c.accNum === accNum);
-            console.log(`Dear ${chalk.green.bold(customer?.firstName + " " + customer?.lastName)}! Your account balance is Rs ${chalk.blue.bold(account.balance)}`);
-        } else {
-            console.log(chalk.red.bold("Invalid account number!"));
-        }
-    }
-
-    withdraw(accNum: number, amount: number) {
-        const account = this.findAccount(accNum);
-        if (account) {
-            if (amount > account.balance) {
-                console.log(chalk.red.bold("You have insufficient balance"));
-            } else {
-                account.balance -= amount;
-                console.log(chalk.green.bold("Withdrawal successful!"));
-                console.log(`New balance: Rs ${chalk.blue.bold(account.balance)}`);
-            }
-        } else {
-            console.log(chalk.red.bold("Invalid account number!"));
-        }
-    }
-
-    deposit(accNum: number, amount: number) {
-        const account = this.findAccount(accNum);
-        if (account) {
-            account.balance += amount;
-            console.log(chalk.green.bold("Deposit successful!"));
-            console.log(`New balance: Rs ${chalk.blue.bold(account.balance)}`);
-        } else {
-            console.log(chalk.red.bold("Invalid account number!"));
-        }
-    }
-}
-
-const myBank = new Bank();
-
-for (let i = 1; i <= 3; i++) {
-    const fName = faker.person.firstName();
-    const lName = faker.person.lastName();
-    const num = parseInt(faker.phone.number("923#########"));
-    const customer = new Customer(fName, lName, 20 * i, "male", num, 1000 + i);
-    myBank.addCustomer(customer);
-}
-
-async function bankService(bank: Bank) {
-    do {
-        const { select } = await inquirer.prompt({
-            type: "list",
-            name: "select",
-            message: "Please select the service:",
-            choices: ["Check Balance", "Withdraw", "Deposit", "Exit"]
-        });
-
-        if (select === "Exit") {
-            console.log("Thank you for using our services. Have a great day!");
-            break;
-        }
-
-        const { accNum } = await inquirer.prompt({
-            type: "input",
-            name: "accNum",
-            message: "Enter your account number:"
-        });
-
-        switch (select) {
-            case "Check Balance":
-                bank.displayBalance(parseInt(accNum));
-                break;
-            case "Withdraw":
-                const { withdrawAmount } = await inquirer.prompt({
-                    type: "number",
-                    name: "withdrawAmount",
-                    message: "Enter the withdrawal amount:"
-                });
-                bank.withdraw(parseInt(accNum), withdrawAmount);
-                break;
-            case "Deposit":
-                const { depositAmount } = await inquirer.prompt({
-                    type: "number",
-                    name: "depositAmount",
-                    message: "Enter the deposit amount:"
-                });
-                bank.deposit(parseInt(accNum), depositAmount);
-                break;
-        }
-    } while (true);
-}
-
-bankService(myBank);
+const a = new myBank();
+a.start();
